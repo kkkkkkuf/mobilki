@@ -19,7 +19,9 @@ import com.example.mobilki.presentation.dim.Dimens
 import com.example.mobilki.ui.theme.typography
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.schedulers.Schedulers
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+
 
 @Composable
 fun UserRow(

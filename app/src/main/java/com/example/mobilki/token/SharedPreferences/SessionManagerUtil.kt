@@ -29,7 +29,7 @@ object SessionManagerUtil {
     }
 
 
-
+    // получение времени истечения сессии из SharedPreferences
     private fun getExpiryDateFromPreferences(context: Context): Long? {
         return context.getSharedPreferences(SESSION_PREFERENCES, 0).getLong(SESSION_EXPIRY_TIME, 0)
     }
@@ -43,5 +43,15 @@ object SessionManagerUtil {
         editor.clear()
         editor.apply()
     }
+
+    fun printToken(context: Context) {
+        val sharedPreferences = context.getSharedPreferences(
+            "ke.co.skyline-design.session_manager.SESSION_PREFERENCES",
+            Context.MODE_PRIVATE
+        )
+        val token = sharedPreferences.getLong("ke.co.skyline-design.session_manager.SESSION_EXPIRY_TIME", 0)
+        println("Token: $token")
+    }
+
 }
 

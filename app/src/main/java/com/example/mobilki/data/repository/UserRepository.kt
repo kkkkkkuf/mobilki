@@ -8,7 +8,7 @@ import io.reactivex.rxjava3.core.Single
 
 class UserRepository(private val userDao: UserDao) {
 
-     fun getAllUsers(): Maybe<List<User>> {
+     fun getAllUsers(): Maybe<List<User>> { //пользователи в виде списка, Maybe может быть пустым
         return userDao.getAll()
     }
 
@@ -20,7 +20,7 @@ class UserRepository(private val userDao: UserDao) {
         return userDao.findByNumber(phoneNumber)
     }
 
-    fun updateUser(user: User): Completable {
+    fun updateUser(user: User): Completable { //ничего не возвращает
         return userDao.updateUser(user)
     }
 

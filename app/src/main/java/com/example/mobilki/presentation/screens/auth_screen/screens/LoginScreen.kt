@@ -22,6 +22,7 @@ import com.example.mobilki.presentation.components.PhoneInput
 import com.example.mobilki.presentation.dim.Dimens
 import com.example.mobilki.presentation.screens.auth_screen.NavHostRoutes
 import com.example.mobilki.token.SharedPreferences.SessionManagerUtil
+import com.example.mobilki.token.SharedPreferences.SessionManagerUtil.printToken
 import com.example.mobilki.ui.theme.typography
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.schedulers.Schedulers
@@ -83,7 +84,8 @@ fun LoginScreen(
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe({ user ->
                         if (user.pass == pass.value) {
-                            SessionManagerUtil.startUserSession(applicationContext, 60*60)
+                            SessionManagerUtil.startUserSession(applicationContext, 10)
+                            printToken(applicationContext)
                             navController.navigate(NavHostRoutes.Hello.name + "/${user.uid}")
                         } else {
                             Toast.makeText(

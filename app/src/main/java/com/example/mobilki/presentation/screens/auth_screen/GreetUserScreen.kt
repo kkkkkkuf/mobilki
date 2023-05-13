@@ -62,15 +62,29 @@ fun GreetUserScreen(arg: String, navController: NavController, viewModel: UserVi
             })
     }
 
+//    LaunchedEffect(key1 = true) {
+//        viewModel.loadAllUsers()
+//            .subscribeOn(Schedulers.io())
+//            .observeOn(AndroidSchedulers.mainThread())
+//            .subscribe({
+//                userList = it.filter { !it.isAdmin } // удаляем текущего администратора из списка
+//            }, {
+//            })
+//    }
+
     LaunchedEffect(key1 = true) {
         viewModel.loadAllUsers()
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
-            .subscribe({
-                userList = it.filter { !it.isAdmin } // удаляем текущего администратора из списка
+            .subscribe({ loadedUserList ->
+                userList = loadedUserList.filter { user ->
+                    user.uid != arg.toInt()
+                }
             }, {
             })
     }
+
+
 
 
     Column(
@@ -133,6 +147,7 @@ fun GreetUserScreen(arg: String, navController: NavController, viewModel: UserVi
                 }
             }
         }
+
 
         Button(
             onClick = {
