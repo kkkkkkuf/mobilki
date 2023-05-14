@@ -1,4 +1,4 @@
-package com.example.mobilki.presentation.weather.api
+package com.example.mobilki.weatherApi
 
 data class WeatherResponse(
     val coord: Coord,

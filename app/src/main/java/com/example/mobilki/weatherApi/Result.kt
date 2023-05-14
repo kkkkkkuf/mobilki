@@ -1,4 +1,4 @@
-package com.example.mobilki.presentation.weather.api
+package com.example.mobilki.weatherApi
 
 sealed class Result<out T> {
     data class Success<out T>(val data: T) : Result<T>()

@@ -1,7 +1,5 @@
-package com.example.mobilki.presentation.weather.api
+package com.example.mobilki.weatherApi
 
-import com.example.mobilki.R
-import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
@@ -17,9 +15,6 @@ class WeatherApiClient(private val apiKey: String) {
         apiService = retrofit.create(WeatherApiService::class.java)
     }
 
-//    suspend fun getCurrentWeather(city: String): WeatherResponse {
-//        return apiService.getCurrentWeather(city, apiKey)
-//    }
 
     suspend fun getCurrentWeather(city: String): Result<WeatherResponse> {
         return try {
@@ -29,6 +24,25 @@ class WeatherApiClient(private val apiKey: String) {
             Result.Error(e.message ?: "Unknown error")
         }
     }
+
+    suspend fun getCurrentWeatherByCoordinates(latitude: Double, longitude: Double): Result<WeatherResponse> {
+        return try {
+            val response = apiService.getCurrentWeatherByCoordinates(latitude, longitude, apiKey)
+            if (response.isSuccessful) {
+                val weatherResponse = response.body()
+                if (weatherResponse != null) {
+                    Result.Success(weatherResponse)
+                } else {
+                    Result.Error("Empty response body")
+                }
+            } else {
+                Result.Error("Request failed: ${response.code()}")
+            }
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Unknown error occurred")
+        }
+    }
+
 
 
 
