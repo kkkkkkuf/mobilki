@@ -2,6 +2,7 @@ package com.example.mobilki.presentation.screens.auth_screen
 
 import android.app.AlertDialog
 import android.content.Intent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -28,9 +29,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.*
 import com.example.mobilki.presentation.screens.auth_screen.dialogs.SessionExpiredDialog
-
-
-
+import com.example.mobilki.presentation.screens.auth_screen.weatherScreens.WeatherAppUserScreen
 
 @Composable
 fun GreetUserScreen(arg: String, navController: NavController, viewModel: UserViewModel) {
@@ -62,16 +61,6 @@ fun GreetUserScreen(arg: String, navController: NavController, viewModel: UserVi
             })
     }
 
-//    LaunchedEffect(key1 = true) {
-//        viewModel.loadAllUsers()
-//            .subscribeOn(Schedulers.io())
-//            .observeOn(AndroidSchedulers.mainThread())
-//            .subscribe({
-//                userList = it.filter { !it.isAdmin } // удаляем текущего администратора из списка
-//            }, {
-//            })
-//    }
-
     LaunchedEffect(key1 = true) {
         viewModel.loadAllUsers()
             .subscribeOn(Schedulers.io())
@@ -85,10 +74,11 @@ fun GreetUserScreen(arg: String, navController: NavController, viewModel: UserVi
     }
 
 
-
-
     Column(
         modifier = Modifier.fillMaxSize()
+            .background(Color.Blue)
+
+
     ) {
 
         Box(
@@ -146,6 +136,9 @@ fun GreetUserScreen(arg: String, navController: NavController, viewModel: UserVi
                     )
                 }
             }
+        }
+        else {
+            WeatherAppUserScreen();
         }
 
 
