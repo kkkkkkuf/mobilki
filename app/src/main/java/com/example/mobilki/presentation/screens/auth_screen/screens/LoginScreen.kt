@@ -84,7 +84,7 @@ fun LoginScreen(
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe({ user ->
                         if (user.pass == pass.value) {
-                            SessionManagerUtil.startUserSession(applicationContext, 10)
+                            SessionManagerUtil.startUserSession(applicationContext, 60)
                             printToken(applicationContext)
                             navController.navigate(NavHostRoutes.Hello.name + "/${user.uid}")
                         } else {

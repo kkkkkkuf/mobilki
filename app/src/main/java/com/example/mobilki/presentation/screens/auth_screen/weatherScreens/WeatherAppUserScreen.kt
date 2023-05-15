@@ -26,30 +26,31 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import android.Manifest
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
+import com.example.mobilki.weatherApi.ForecastResponse
 import com.google.android.gms.location.LocationServices
+import java.text.SimpleDateFormat
+import java.time.*
+import java.time.format.DateTimeFormatter
+import java.util.*
 
 
-@SuppressLint("DiscouragedApi", "UnrememberedMutableState", "CoroutineCreationDuringComposition")
+@SuppressLint("DiscouragedApi", "UnrememberedMutableState", "CoroutineCreationDuringComposition",
+    "SimpleDateFormat"
+)
 @Composable
 fun WeatherAppUserScreen() {
     val weatherResponseState = remember { mutableStateOf<WeatherResponse?>(null) }
     val cityState = remember { mutableStateOf("") }
-
     val locationState = remember { mutableStateOf<Location?>(null) }
-
-
     val context = LocalContext.current
-
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
-
-
     val PERMISSION_REQUEST_CODE = 1001
-
-
-
-
     val coroutineScope = rememberCoroutineScope()
-
+    val hourlyForecastState = remember { mutableStateOf<List<WeatherResponse>>(emptyList()) }
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally
@@ -60,51 +61,145 @@ fun WeatherAppUserScreen() {
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
-        var city by cityState
-        TextField(
-            value = city,
-            onValueChange = { city = it },
-            label = { Text("Enter city") },
-            modifier = Modifier.padding(horizontal = 16.dp)
-        )
-        Button(
-            onClick = {
-                val weatherApiClient = WeatherApiClient("d87d2f8e4941f9a0c6dddf490d5780c8")
-
-                coroutineScope.launch {
-                    val result = withContext(Dispatchers.IO) {
-                        weatherApiClient.getCurrentWeather(city)
-                    }
-
-                    when (result) {
-                        is Result.Success -> {
-                            weatherResponseState.value = result.data
-                        }
-                        is Result.Error -> {
-                            Log.e(
-                                "WeatherAppUserScreen",
-                                "Ошибка при получении погоды: ${result.message}"
-                            )
-                        }
-                        else -> {
-                            Log.e("WeatherAppUserScreen", "Unexpected result type: $result")
-                        }
-                    }
-                }
-            },
-            modifier = Modifier.padding(top = 16.dp)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center
         ) {
-            Text("Get Weather")
+            var city by cityState
+            TextField(
+                value = city,
+                onValueChange = { city = it },
+                label = { Text("Enter city") },
+                modifier = Modifier.weight(1f).padding(horizontal = 16.dp)
+            )
+            Button(
+                onClick = {
+                    weatherResponseState.value = null
+                    hourlyForecastState.value = emptyList()
+
+                    val weatherApiClient = WeatherApiClient("d87d2f8e4941f9a0c6dddf490d5780c8")
+
+                    coroutineScope.launch {
+                        val currentWeatherResult = withContext(Dispatchers.IO) {
+                            weatherApiClient.getCurrentWeather(city)
+                        }
+
+                        when (currentWeatherResult) {
+                            is Result.Success -> {
+                                weatherResponseState.value = currentWeatherResult.data
+                                val forecastResult = weatherApiClient.getHourlyForecast(city)
+
+                                when (forecastResult) {
+                                    is Result.Success -> {
+                                        val forecastResponse = forecastResult.data
+                                        println(forecastResponse)
+                                        hourlyForecastState.value = forecastResponse.hourlyForecasts
+                                        println(hourlyForecastState.value)
+
+                                    }
+                                    is Result.Error -> {
+                                        Log.e(
+                                            "WeatherAppUserScreen",
+                                            "Ошибка при получении прогноза погоды на 24 часа: ${forecastResult.message}"
+                                        )
+                                    }
+                                }
+                            }
+                            is Result.Error -> {
+                                Log.e(
+                                    "WeatherAppUserScreen",
+                                    "Ошибка при получении погоды: ${currentWeatherResult.message}"
+                                )
+                            }
+                            else -> {
+                                Log.e(
+                                    "WeatherAppUserScreen",
+                                    "Unexpected result type: $currentWeatherResult"
+                                )
+                            }
+                        }
+                    }
+                },
+                modifier = Modifier.padding(horizontal = 16.dp)
+            ) {
+                Text(
+                    text = "Get Weather",
+                    style = typography.body1,
+                    color = Color.White
+                )
+            }
         }
 
+        Text("Or")
+
         Button(
             onClick = {
+                weatherResponseState.value = null
+                hourlyForecastState.value = emptyList()
                 // Проверить разрешение ACCESS_FINE_LOCATION
                 if (checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, context)) {
                     // Запросить текущую геопозицию
                     fusedLocationClient.lastLocation
                         .addOnSuccessListener { location: Location? ->
                             locationState.value = location
+
+                            location?.let { currentLocation ->
+                                val weatherApiClient =
+                                    WeatherApiClient("d87d2f8e4941f9a0c6dddf490d5780c8")
+
+                                coroutineScope.launch {
+                                    val weatherResult = withContext(Dispatchers.IO) {
+                                        weatherApiClient.getCurrentWeatherByCoordinates(
+                                            currentLocation.latitude,
+                                            currentLocation.longitude
+                                        )
+                                    }
+
+                                    when (weatherResult) {
+                                        is Result.Success -> {
+                                            weatherResponseState.value = weatherResult.data
+                                        }
+                                        is Result.Error -> {
+                                            Log.e(
+                                                "WeatherAppUserScreen",
+                                                "Ошибка при получении погоды: ${weatherResult.message}"
+                                            )
+                                        }
+                                        else -> {
+                                            Log.e(
+                                                "WeatherAppUserScreen",
+                                                "Unexpected result type: $weatherResult"
+                                            )
+                                        }
+                                    }
+
+                                    val forecastResult = withContext(Dispatchers.IO) {
+                                        weatherApiClient.getHourlyForecastByCoordinates(
+                                            currentLocation.latitude,
+                                            currentLocation.longitude
+                                        )
+                                    }
+
+                                    when (forecastResult) {
+                                        is Result.Success -> {
+                                            hourlyForecastState.value =
+                                                forecastResult.data.hourlyForecasts
+                                        }
+                                        is Result.Error -> {
+                                            Log.e(
+                                                "WeatherAppUserScreen",
+                                                "Ошибка при получении прогноза погоды на 24 часа: ${forecastResult.message}"
+                                            )
+                                        }
+                                        else -> {
+                                            Log.e(
+                                                "WeatherAppUserScreen",
+                                                "Unexpected result type: $forecastResult"
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                         }
                         .addOnFailureListener { exception: Exception ->
                             // Обработка ошибки при получении геопозиции
@@ -124,73 +219,141 @@ fun WeatherAppUserScreen() {
             },
             modifier = Modifier.padding(bottom = 16.dp)
         ) {
-            Text("Get Current Location")
+            Text(
+                text = "Get Weather by Current Location",
+                style = typography.body1,
+                color = Color.White
+            )
         }
 
-        val location = locationState.value
-        if (location != null) {
-            val latitude = location.latitude
-            val longitude = location.longitude
 
-            println(latitude)
-            println(latitude)
+        weatherResponseState.value?.let { weatherResponse ->
+            val temperatureInCelsius = weatherResponse.main.temp - 273.15
+            val feelsLikeTemperatureInCelsius = weatherResponse.main.feels_like - 273.15
 
+            val formattedTemperature = temperatureInCelsius.toInt().toString()
+            val formattedFeelsLikeTemperature = feelsLikeTemperatureInCelsius.toInt().toString()
 
-            val weatherApiClient = WeatherApiClient("d87d2f8e4941f9a0c6dddf490d5780c8")
+            Column(
+                modifier = Modifier
+                    .padding(top = 16.dp)
+                    .fillMaxWidth()
+                    .wrapContentHeight()
+                    .wrapContentWidth(Alignment.CenterHorizontally),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = weatherResponse.name,
+                    style = typography.h6,
+                    modifier = Modifier.padding(bottom = 4.dp),
+                    textAlign = TextAlign.Center
+                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                ) {
+                    val iconCode = weatherResponse.weather.firstOrNull()?.icon
+                    if (iconCode != null) {
+                        val resourceName = "ic_launcher_$iconCode"
+                        val resourceId = with(context) {
+                            resources.getIdentifier(resourceName, "drawable", packageName)
+                        }
 
-            coroutineScope.launch {
-                val result = withContext(Dispatchers.IO) {
-                    weatherApiClient.getCurrentWeatherByCoordinates(latitude, longitude)
-                }
-                when (result) {
-                    is Result.Success -> {
-                        weatherResponseState.value = result.data
+                        if (resourceId != 0) {
+                            Image(
+                                painter = painterResource(resourceId),
+                                contentDescription = "Weather Icon",
+                                modifier = Modifier
+                                    .size(150.dp)
+                                    .padding(end = 8.dp)
+                            )
+                        } else {
+                            Text(text = "Image not found", style = typography.body2)
+                        }
                     }
-                    is Result.Error -> {
-                        Log.e(
-                            "WeatherAppUserScreen",
-                            "Ошибка при получении погоды: ${result.message}"
+
+                    Column {
+
+                        Text(
+                            text = "$formattedTemperature°C",
+                            style = typography.h4,
+                            modifier = Modifier.padding(bottom = 4.dp),
+                            textAlign = TextAlign.Center
                         )
-                        // Additional error handling or displaying an error message to the user can be done here
-                    }
-                    else -> {
-                        Log.e("WeatherAppUserScreen", "Unexpected result type: $result")
-                        // Handle any unexpected result types here
+                        Text(
+                            text = "Feels ${formattedFeelsLikeTemperature}°C",
+                            style = typography.h6,
+                            textAlign = TextAlign.Center
+                        )
                     }
                 }
             }
         }
 
-        weatherResponseState.value?.let { weatherResponse ->
-            val temperatureInCelsius = weatherResponse.main.temp - 273.15
-            val decimalFormat = DecimalFormat("0.00") // Формат с двумя знаками после запятой
-            val formattedTemperature = decimalFormat.format(temperatureInCelsius)
-            Text(
-                text = "City: ${weatherResponse.name}",
-                modifier = Modifier.padding(top = 16.dp)
-            )
-            Text(
-                text = "Temperature: $formattedTemperature°C",
-                modifier = Modifier.padding(top = 16.dp)
-            )
 
-            val iconCode = weatherResponse.weather.firstOrNull()?.icon
-            println(iconCode)
-            if (iconCode != null) {
-                val resourceName = "ic_launcher_$iconCode"
-                println(resourceName)
-                val resourceId = with(context) {
-                    resources.getIdentifier(resourceName, "drawable", packageName)
-                }
-                println(resourceId)
+        hourlyForecastState.value?.let { hourlyForecasts ->
+            val currentDateTime = LocalDateTime.now()
+            val endDateTime = currentDateTime.plusHours(24)
+            val filteredForecasts = hourlyForecasts.filter { forecast ->
+                val forecastDateTime =
+                    Instant.ofEpochSecond(forecast.dt).atZone(ZoneId.systemDefault())
+                        .toLocalDateTime()
+                forecastDateTime in currentDateTime..endDateTime
+            }
 
-                if (resourceId != 0) {
-                    Image(
-                        painter = painterResource(resourceId),
-                        contentDescription = "Weather Icon"
-                    )
-                } else {
-                    Text(text = "Image not found")
+            LazyColumn(
+                modifier = Modifier.padding(top = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                items(filteredForecasts) { forecast ->
+                    val forecastTemperature = forecast.main.temp - 273.15
+                    val formattedForecastTemperature = forecastTemperature.toInt().toString()
+                    val forecastIconCode = forecast.weather.firstOrNull()?.icon
+                    val timestamp = forecast.dt
+                    val dateTime =
+                        Instant.ofEpochSecond(timestamp).atZone(ZoneId.systemDefault())
+                            .toLocalDateTime()
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    ) {
+                        Text(
+                            text = "$dateTime",
+                            style = typography.body2,
+                            modifier = Modifier.width(85.dp)
+                        )
+
+                        forecastIconCode?.let { iconCode ->
+                            val resourceName = "ic_launcher_$iconCode"
+                            val resourceId = with(context) {
+                                resources.getIdentifier(resourceName, "drawable", packageName)
+                            }
+
+                            if (resourceId != 0) {
+                                Image(
+                                    painter = painterResource(resourceId),
+                                    contentDescription = "Weather Icon",
+                                    modifier = Modifier
+                                        .size(50.dp)
+                                        .padding(end = 16.dp)
+                                )
+                            }
+                        }
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Temp: $formattedForecastTemperature°C",
+                                style = typography.body2
+                            )
+                            Text(
+                                text = "Humidity: ${forecast.main.humidity}%",
+                                style = typography.body2
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -204,5 +367,4 @@ private fun checkPermission(permission: String, context: Context): Boolean {
 private fun requestPermission(permission: String, requestCode: Int, context: Context) {
     ActivityCompat.requestPermissions(context as Activity, arrayOf(permission), requestCode)
 }
-
 

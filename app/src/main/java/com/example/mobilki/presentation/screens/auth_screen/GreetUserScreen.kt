@@ -30,6 +30,7 @@ import kotlinx.coroutines.withContext
 import java.util.*
 import com.example.mobilki.presentation.screens.auth_screen.dialogs.SessionExpiredDialog
 import com.example.mobilki.presentation.screens.auth_screen.weatherScreens.WeatherAppUserScreen
+import com.example.mobilki.ui.theme.Teal200
 
 @Composable
 fun GreetUserScreen(arg: String, navController: NavController, viewModel: UserViewModel) {
@@ -76,14 +77,15 @@ fun GreetUserScreen(arg: String, navController: NavController, viewModel: UserVi
 
     Column(
         modifier = Modifier.fillMaxSize()
-            .background(Color.Blue)
+            .background(Teal200)
 
 
     ) {
 
-        Box(
-            modifier = Modifier.fillMaxWidth(),
-            contentAlignment = Alignment.TopEnd
+        Row(
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth().padding(top = 16.dp)
         ) {
             Button(
                 onClick = {
@@ -101,13 +103,33 @@ fun GreetUserScreen(arg: String, navController: NavController, viewModel: UserVi
                     color = Color.White,
                 )
             }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Button(
+                onClick = {
+                    rememberCoroutineScope.launch {
+                        SessionManagerUtil.endUserSession(context)
+                        navController.navigate(NavHostRoutes.Auth.name)
+                    }
+                },
+                shape = RoundedCornerShape(Dimens.Shapes.baseBorderShape),
+            ) {
+                Text(
+                    text = "Выйти",
+                    style = typography.body1,
+                    color = Color.White
+                )
+            }
         }
 
-        Text(
-            text = "WELCOME PAGE",
-            style = typography.h6,
-            modifier = Modifier.align(Alignment.CenterHorizontally)
-        )
+
+
+//        Text(
+//            text = "WELCOME PAGE",
+//            style = typography.h6,
+//            modifier = Modifier.align(Alignment.CenterHorizontally)
+//        )
 
         // Блок для панели администратора
         if (user?.isAdmin == true) {
@@ -136,29 +158,9 @@ fun GreetUserScreen(arg: String, navController: NavController, viewModel: UserVi
                     )
                 }
             }
-        }
-        else {
+        } else {
             WeatherAppUserScreen();
         }
-
-
-        Button(
-            onClick = {
-                rememberCoroutineScope.launch {
-                    SessionManagerUtil.endUserSession(context)
-                    navController.navigate(NavHostRoutes.Auth.name)
-                }
-            },
-            shape = RoundedCornerShape(Dimens.Shapes.baseBorderShape),
-            modifier = Modifier.align(Alignment.CenterHorizontally)
-        ) {
-            Text(
-                text = "Выйти",
-                style = typography.body1,
-                color = Color.Black
-            )
-        }
-
     }
 }
 

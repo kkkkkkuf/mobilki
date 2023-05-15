@@ -43,7 +43,44 @@ class WeatherApiClient(private val apiKey: String) {
         }
     }
 
+    suspend fun getHourlyForecast(city: String): Result<ForecastResponse> {
+        return try {
+            val response = apiService.getHourlyForecast(city, apiKey)
+            if (response.isSuccessful) {
+                val forecastResponse = response.body()
+                if (forecastResponse != null) {
+                    Result.Success(forecastResponse)
+                } else {
+                    Result.Error("Empty response body")
+                }
+            } else {
+                Result.Error("Request failed: ${response.code()}")
+            }
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Unknown error")
+        }
+    }
 
+    suspend fun getHourlyForecastByCoordinates(
+        latitude: Double,
+        longitude: Double
+    ): Result<ForecastResponse> {
+        return try {
+            val response = apiService.getHourlyForecastByCoordinates(latitude, longitude, apiKey)
+            if (response.isSuccessful) {
+                val forecastResponse = response.body()
+                if (forecastResponse != null) {
+                    Result.Success(forecastResponse)
+                } else {
+                    Result.Error("Empty response body")
+                }
+            } else {
+                Result.Error("Request failed: ${response.code()}")
+            }
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Unknown error")
+        }
+    }
 
 
 

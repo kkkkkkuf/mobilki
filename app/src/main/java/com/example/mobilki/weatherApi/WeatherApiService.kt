@@ -17,5 +17,21 @@ interface WeatherApiService {
         @Query("lon") longitude: Double,
         @Query("appid") apiKey: String
     ): Response<WeatherResponse>
+
+    @GET("forecast")
+    suspend fun getHourlyForecast(
+        @Query("q") city: String,
+        @Query("appid") apiKey: String,
+    ): Response<ForecastResponse>
+
+    @GET("forecast")
+    suspend fun getHourlyForecastByCoordinates(
+        @Query("lat") latitude: Double,
+        @Query("lon") longitude: Double,
+        @Query("appid") apiKey: String
+    ): Response<ForecastResponse>
+
+
+
 }
 
