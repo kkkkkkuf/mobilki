@@ -3,13 +3,17 @@ package com.example.mobilki.weatherApi
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
+// Этот класс WeatherApiClient является клиентским классом,
+// который обеспечивает доступ к функциональности Open Weather Map API.
+// Он использует WeatherApiService для выполнения запросов к API и обработки ответов.
 class WeatherApiClient(private val apiKey: String) {
     private val apiService: WeatherApiService
 
+    //создаем экземпляр Retrofit и настраиваем его для взаимодействия с Open Weather Map API.
     init {
         val retrofit = Retrofit.Builder()
             .baseUrl("https://api.openweathermap.org/data/2.5/")
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create()) //конвертер в json
             .build()
 
         apiService = retrofit.create(WeatherApiService::class.java)
@@ -81,8 +85,4 @@ class WeatherApiClient(private val apiKey: String) {
             Result.Error(e.message ?: "Unknown error")
         }
     }
-
-
-
-
 }

@@ -1,9 +1,10 @@
 package com.example.mobilki.weatherApi
 
+//Это класс который представляет собой модель данных для парсинга JSON ответа
 data class WeatherResponse(
-    val coord: Coord,
-    val weather: List<Weather>,
-    val main: Main,
+    val coord: Coord, //координаты местоположения
+    val weather: List<Weather>, //список погодных условий
+    val main: Main, //информация о температуре и влажности
     val visibility: Int,
     val wind: Wind,
     val clouds: Clouds,

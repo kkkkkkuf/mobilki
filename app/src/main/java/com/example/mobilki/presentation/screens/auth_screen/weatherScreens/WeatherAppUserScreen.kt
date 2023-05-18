@@ -30,6 +30,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
+import coil.compose.rememberAsyncImagePainter
+import coil.compose.rememberImagePainter
+import coil.request.ImageRequest
+import com.bumptech.glide.Glide
 import com.example.mobilki.weatherApi.ForecastResponse
 import com.google.android.gms.location.LocationServices
 import java.text.SimpleDateFormat
@@ -47,8 +51,8 @@ fun WeatherAppUserScreen() {
     val cityState = remember { mutableStateOf("") }
     val locationState = remember { mutableStateOf<Location?>(null) }
     val context = LocalContext.current
-    val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
-    val PERMISSION_REQUEST_CODE = 1001
+    val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) } //объект для получения текущей геопозиции. создается с помощью LocationServices.getFusedLocationProviderClient(context), где context - это контекст приложения.
+    val PERMISSION_REQUEST_CODE = 1001 //это код запроса разрешения. Он используется при запросе разрешения на доступ к местоположению устройства. Значение 1001 просто выбрано в качестве уникального идентификатора для этого запроса разрешения.
     val coroutineScope = rememberCoroutineScope()
     val hourlyForecastState = remember { mutableStateOf<List<WeatherResponse>>(emptyList()) }
 
@@ -254,25 +258,30 @@ fun WeatherAppUserScreen() {
                 ) {
                     val iconCode = weatherResponse.weather.firstOrNull()?.icon
                     if (iconCode != null) {
-                        val resourceName = "ic_launcher_$iconCode"
-                        val resourceId = with(context) {
-                            resources.getIdentifier(resourceName, "drawable", packageName)
-                        }
+                        val url = "http://openweathermap.org/img/w/$iconCode.png"
 
-                        if (resourceId != 0) {
-                            Image(
-                                painter = painterResource(resourceId),
-                                contentDescription = "Weather Icon",
-                                modifier = Modifier
-                                    .size(150.dp)
-                                    .padding(end = 8.dp)
-                            )
-                        } else {
-                            Text(text = "Image not found", style = typography.body2)
-                        }
+                        val painter = rememberAsyncImagePainter(
+                            ImageRequest.Builder(LocalContext.current).data(data = url).apply(block = fun ImageRequest.Builder.() {
+                                size(100, 100)
+                            }).build()
+                        )
+
+                        Image(
+                            painter = painter,
+                            contentDescription = "Weather Icon",
+                            modifier = Modifier
+                                .size(150.dp)
+                                .padding(end = 8.dp)
+                        )
+                    } else {
+                        Text(text = "Image not found", style = typography.body2)
                     }
+                }
 
-                    Column {
+
+
+
+                Column {
 
                         Text(
                             text = "$formattedTemperature°C",
@@ -327,21 +336,19 @@ fun WeatherAppUserScreen() {
                         )
 
                         forecastIconCode?.let { iconCode ->
-                            val resourceName = "ic_launcher_$iconCode"
-                            val resourceId = with(context) {
-                                resources.getIdentifier(resourceName, "drawable", packageName)
-                            }
+                            val url = "http://openweathermap.org/img/w/$iconCode.png"
 
-                            if (resourceId != 0) {
-                                Image(
-                                    painter = painterResource(resourceId),
-                                    contentDescription = "Weather Icon",
-                                    modifier = Modifier
-                                        .size(50.dp)
-                                        .padding(end = 16.dp)
-                                )
-                            }
+                            val painter = rememberAsyncImagePainter(model = url)
+
+                            Image(
+                                painter = painter,
+                                contentDescription = "Weather Icon",
+                                modifier = Modifier
+                                    .size(50.dp)
+                                    .padding(end = 16.dp)
+                            )
                         }
+
 
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
@@ -358,7 +365,6 @@ fun WeatherAppUserScreen() {
             }
         }
     }
-}
 
 private fun checkPermission(permission: String, context: Context): Boolean {
     return ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
