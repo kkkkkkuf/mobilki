@@ -19,27 +19,21 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.example.mobilki.weatherApi.Result
-import java.text.DecimalFormat
 import androidx.compose.foundation.Image
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import android.Manifest
+import android.graphics.BitmapFactory
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.style.TextAlign
-import coil.compose.rememberAsyncImagePainter
-import coil.compose.rememberImagePainter
-import coil.request.ImageRequest
-import com.bumptech.glide.Glide
-import com.example.mobilki.weatherApi.ForecastResponse
 import com.google.android.gms.location.LocationServices
-import java.text.SimpleDateFormat
+import java.net.URL
 import java.time.*
-import java.time.format.DateTimeFormatter
-import java.util.*
 
 
 @SuppressLint("DiscouragedApi", "UnrememberedMutableState", "CoroutineCreationDuringComposition",
@@ -258,113 +252,112 @@ fun WeatherAppUserScreen() {
                 ) {
                     val iconCode = weatherResponse.weather.firstOrNull()?.icon
                     if (iconCode != null) {
-                        val url = "http://openweathermap.org/img/w/$iconCode.png"
 
-                        val painter = rememberAsyncImagePainter(
-                            ImageRequest.Builder(LocalContext.current).data(data = url).apply(block = fun ImageRequest.Builder.() {
-                                size(100, 100)
-                            }).build()
-                        )
+                        val url = "https://openweathermap.org/img/w/$iconCode.png"
 
-                        Image(
-                            painter = painter,
-                            contentDescription = "Weather Icon",
-                            modifier = Modifier
-                                .size(150.dp)
-                                .padding(end = 8.dp)
-                        )
-                    } else {
-                        Text(text = "Image not found", style = typography.body2)
+                        val imageBitmap = loadImage(url)
+
+                        if (imageBitmap != null) {
+                            Image(
+                                bitmap = imageBitmap,
+                                contentDescription = "Weather Icon",
+                                modifier = Modifier
+                                    .size(200.dp)
+                            )
+                        } else {
+                            Text(text = "Image not found", style = typography.body2)
+                        }
+
                     }
                 }
-
-
-
-
                 Column {
 
-                        Text(
-                            text = "$formattedTemperature°C",
-                            style = typography.h4,
-                            modifier = Modifier.padding(bottom = 4.dp),
-                            textAlign = TextAlign.Center
-                        )
-                        Text(
-                            text = "Feels ${formattedFeelsLikeTemperature}°C",
-                            style = typography.h6,
-                            textAlign = TextAlign.Center
-                        )
-                    }
+                    Text(
+                        text = "$formattedTemperature°C",
+                        style = typography.h4,
+                        modifier = Modifier.padding(bottom = 4.dp),
+                        textAlign = TextAlign.Center
+                    )
+                    Text(
+                        text = "Feels ${formattedFeelsLikeTemperature}°C",
+                        style = typography.h6,
+                        textAlign = TextAlign.Center
+                    )
                 }
             }
         }
+    }
 
 
-        hourlyForecastState.value?.let { hourlyForecasts ->
-            val currentDateTime = LocalDateTime.now()
-            val endDateTime = currentDateTime.plusHours(24)
-            val filteredForecasts = hourlyForecasts.filter { forecast ->
-                val forecastDateTime =
-                    Instant.ofEpochSecond(forecast.dt).atZone(ZoneId.systemDefault())
+    hourlyForecastState.value?.let { hourlyForecasts ->
+        val currentDateTime = LocalDateTime.now()
+        val endDateTime = currentDateTime.plusHours(24)
+        val filteredForecasts = hourlyForecasts.filter { forecast ->
+            val forecastDateTime =
+                Instant.ofEpochSecond(forecast.dt).atZone(ZoneId.systemDefault())
+                    .toLocalDateTime()
+            forecastDateTime in currentDateTime..endDateTime
+        }
+
+        LazyColumn(
+            modifier = Modifier.padding(top = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            items(filteredForecasts) { forecast ->
+                val forecastTemperature = forecast.main.temp - 273.15
+                val formattedForecastTemperature = forecastTemperature.toInt().toString()
+                val forecastIconCode = forecast.weather.firstOrNull()?.icon
+                val timestamp = forecast.dt
+                val dateTime =
+                    Instant.ofEpochSecond(timestamp).atZone(ZoneId.systemDefault())
                         .toLocalDateTime()
-                forecastDateTime in currentDateTime..endDateTime
-            }
 
-            LazyColumn(
-                modifier = Modifier.padding(top = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                items(filteredForecasts) { forecast ->
-                    val forecastTemperature = forecast.main.temp - 273.15
-                    val formattedForecastTemperature = forecastTemperature.toInt().toString()
-                    val forecastIconCode = forecast.weather.firstOrNull()?.icon
-                    val timestamp = forecast.dt
-                    val dateTime =
-                        Instant.ofEpochSecond(timestamp).atZone(ZoneId.systemDefault())
-                            .toLocalDateTime()
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                ) {
+                    Text(
+                        text = "$dateTime",
+                        style = typography.body2,
+                        modifier = Modifier.width(85.dp)
+                    )
 
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    ) {
-                        Text(
-                            text = "$dateTime",
-                            style = typography.body2,
-                            modifier = Modifier.width(85.dp)
-                        )
+                    forecastIconCode?.let { iconCode ->
+                        val url = "https://openweathermap.org/img/w/$iconCode.png"
 
-                        forecastIconCode?.let { iconCode ->
-                            val url = "http://openweathermap.org/img/w/$iconCode.png"
+                        val imageBitmap = loadImage(url)
 
-                            val painter = rememberAsyncImagePainter(model = url)
-
+                        if (imageBitmap != null) {
                             Image(
-                                painter = painter,
+                                bitmap = imageBitmap,
                                 contentDescription = "Weather Icon",
                                 modifier = Modifier
-                                    .size(50.dp)
+                                    .size(60.dp)
                                     .padding(end = 16.dp)
                             )
+                        } else {
+                            Text(text = "Image not found", style = typography.body2)
                         }
+                    }
 
 
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Temp: $formattedForecastTemperature°C",
-                                style = typography.body2
-                            )
-                            Text(
-                                text = "Humidity: ${forecast.main.humidity}%",
-                                style = typography.body2
-                            )
-                        }
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Temp: $formattedForecastTemperature°C",
+                            style = typography.body2
+                        )
+                        Text(
+                            text = "Humidity: ${forecast.main.humidity}%",
+                            style = typography.body2
+                        )
                     }
                 }
             }
         }
     }
+}
 
 private fun checkPermission(permission: String, context: Context): Boolean {
     return ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
@@ -373,4 +366,27 @@ private fun checkPermission(permission: String, context: Context): Boolean {
 private fun requestPermission(permission: String, requestCode: Int, context: Context) {
     ActivityCompat.requestPermissions(context as Activity, arrayOf(permission), requestCode)
 }
+
+@Composable
+fun loadImage(url: String): ImageBitmap? {
+    var imageBitmap by remember { mutableStateOf<ImageBitmap?>(null) }
+
+    LaunchedEffect(url) {
+        withContext(Dispatchers.IO) {
+            try {
+                val stream = URL(url).openStream()
+                val bitmap = BitmapFactory.decodeStream(stream)
+                imageBitmap = bitmap.asImageBitmap()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    return imageBitmap
+}
+
+
+
+
 
